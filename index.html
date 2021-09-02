@@ -1,0 +1,137 @@
+<html>
+<body>
+    <style>
+        body {
+            background-color: #2e2e2e;
+            display: flex;
+            justify-content: center;
+        }
+
+        .game {
+            margin-top: 5vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .playingBoard {
+            display: flex;
+            flex-wrap: wrap;
+            width: 36vw;
+            background-color: #aaa;
+            border-radius: 1vw;
+        }
+
+        .checkField {
+            height: 10vw;
+            width: 10vw;
+            margin: 1vw;
+            border-radius: 1vw;
+            background-color: #555;
+        }
+
+        .field-checked0 {
+            background-color: #e25050;
+        }
+
+        .field-checked1 {
+            background-color: #5050e5;
+        }
+
+        .scoreBoard {
+            width: 36vw;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        h3 {
+            font-size: min(4vw, 36px);
+            margin: 1vw;
+        }
+        #status{
+            text-align:center;
+        }
+    </style>
+    <div class="game">
+        <div class="scoreBoard">
+            <h3>
+                Blue : <span id="scoreBlue">0</span>
+            </h3>
+            <h3>
+                YOU ARE <span id="player"></span>
+            </h3>
+            <h3>
+                Red : <span id="scoreRed">0</span>
+            </h3>
+        </div>
+        <div id="status">
+            <h3 id="score">WAITING</h3>
+        </div>
+        <div class="playingBoard">
+            <div class="checkField" id="0" onclick="selectSquare(id)">
+            </div>
+            <div class="checkField" id="1" onclick="selectSquare(id)">
+            </div>
+            <div class="checkField" id="2" onclick="selectSquare(id)">
+            </div>
+            <div class="checkField" id="3" onclick="selectSquare(id)">
+            </div>
+            <div class="checkField" id="4" onclick="selectSquare(id)">
+            </div>
+            <div class="checkField" id="5" onclick="selectSquare(id)">
+            </div>
+            <div class="checkField" id="6" onclick="selectSquare(id)">
+            </div>
+            <div class="checkField" id="7" onclick="selectSquare(id)">
+            </div>
+            <div class="checkField" id="8" onclick="selectSquare(id)">
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        var socket = io();
+      
+        var messages = document.getElementById('messages');
+        var form = document.getElementById('form');
+        var input = document.getElementById('input');
+
+        function selectSquare(id) {
+            socket.emit('move', id);
+        }
+
+        socket.on('valid', function (msg, id) {
+            document.getElementById(id).classList.toggle(msg);
+        });
+
+        socket.on('joined', function (msg) {
+            document.getElementById("player").innerHTML = msg;
+        });
+
+        socket.on('game over', function (msg, scoreBlue, scoreRed) {
+
+            
+            if (msg == 1) {
+                document.getElementById("score").innerHTML = "WINNER!!!";
+            }
+            else {
+                document.getElementById("score").innerHTML = "loser";
+            }
+            document.getElementById("scoreBlue").innerHTML = scoreBlue;
+            document.getElementById("scoreRed").innerHTML = scoreRed;
+            setTimeout(resetBoard, 2000);
+        });
+
+        function resetBoard() {
+            for (let i = 0; i < 9; i++) {
+                var square = document.getElementById(i);
+                square.classList.remove("field-checked0");
+                square.classList.remove("field-checked1");
+                squaresUsed = [0, 0];
+                board = [0, 0, 0, 0, 0, 0, 0, 0, 0]
+                player0 = [0, 0, 0];
+                player1 = [0, 0, 0];
+            }
+        }
+      </script>
