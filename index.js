@@ -1,6 +1,7 @@
 const express = require('express');
 const app = express();
 const http = require('http');
+const { platform } = require('os');
 const server = http.createServer(app);
 const { Server } = require("socket.io");
 const io = new Server(server);
@@ -22,23 +23,62 @@ io.on('connection', (socket) => {
     if (player0 == null) {
         currentPlayer = player0 = socket.id;
         io.to(player0).emit('joined', "BLUE");
-        console.log("Blue player joined")
+        console.log("Blue player joined");
+        if (player1 == null) {
+            console.log("HEYO");
+            io.to(player0).emit('waiting for player', "Waiting for other player");
+        }
+        else {
+            console.log("HEYO1111");
+            console.log(player1);
+            io.to(player1).emit('your turn', false);
+            io.to(player0).emit('your turn', true);
+        }
     }
-    else if (player0 != null && player1 == null){
+    else if (player0 != null && player1 == null) {
         player1 = socket.id;
+        io.to(player0).emit('your turn', true);
+        io.to(player1).emit('your turn', false);
         io.to(player1).emit('joined', "RED");
         console.log("Red player joined")
-}
+    }
+    else {
+        io.to(socket.id).emit('waiting for player', "ROOM FILLED");
+    }
     if (lastMsg != null){
         io.emit('chat message', lastMsg);
     }
     socket.on('disconnect', () => {
+        if (socket.id == player0) {
+            player0 = null;
+            io.to(player1).emit('game over', 1, 0, 0);
+            
+            io.to(player1).emit('waiting for player', "Waiting for other player");
+            
+            currentPlayer = player1;
+            console.log("Blue player left\n")
+        }
+        else {
+            player1 = null;
+            io.to(player0).emit('game over', 1, 0, 0);
+            
+            io.to(player0).emit('waiting for player', "Waiting for other player");
+            
+            currentPlayer = player0;
+            console.log("Red player left \n");
+        }
+
+        squaresUsed = [0, 0];
+        board = [0, 0, 0, 0, 0, 0, 0, 0, 0]
+        score0 = 0;
+        score1 = 0;
     });
   });
   io.on('connection', (socket) => {
     socket.on('move', (msg) => {
         console.log('message: ' + msg);
         checkValidDraw(msg, socket);
+        
     });
   });
   io.on('connection', (socket) => {
@@ -51,7 +91,10 @@ server.listen(3000, () => {
   console.log('listening on *:3000');
 });
 
-
+function updateStatus(oldPlayer, newPlayer) {
+    io.to(oldPlayer).emit('your turn', false);
+    io.to(newPlayer).emit('your turn', true);
+}
 
 function checkValidDraw(msg, socket) {
     if (socket.id == currentPlayer) {
@@ -65,6 +108,8 @@ function checkValidDraw(msg, socket) {
                 io.emit('valid', "field-checked1", msg)
                 squaresUsed[0] += 1;
                 currentPlayer = player1;
+                updateStatus(player0, player1);
+                updateStatus();
                 board[msg] = 1;
             }
         }
@@ -77,11 +122,17 @@ function checkValidDraw(msg, socket) {
             io.emit('valid', "field-checked0", msg)
             squaresUsed[1] += 1;
             currentPlayer = player0;
+            updateStatus(player1, player0);
+            updateStatus();
             board[msg] = 2;
         }
         if (squaresUsed[0] + squaresUsed[1] > 4) {
             threeOnRow();
         }
+    }
+    else {
+        console.log(socket.id);
+        console.log(currentPlayer);
     }
     console.log(board);
 }
@@ -117,12 +168,20 @@ function determineWinner(player) {
         score1 += 1;
         io.to(player1).emit('game over', 1, score0, score1);
         io.to(player0).emit('game over', 0, score0, score1);
+        setTimeout(function () {
+            io.to(player1).emit('your turn', false);
+            io.to(player0).emit('your turn', true);
+        }, 2000);
         //setTimeout(resetBoard, 2000);
     }
     else {
         console.log("Blue wins");
         score0 += 1;
         io.to(player1).emit('game over', 0, score0, score1);
+        setTimeout(function () {
+            io.to(player0).emit('your turn', false);
+            io.to(player1).emit('your turn', true);
+        }, 2000);
         io.to(player0).emit('game over', 1, score0, score1);
         //setTimeout(resetBoard, 2000);
     }

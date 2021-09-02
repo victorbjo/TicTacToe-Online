@@ -123,6 +123,21 @@
             setTimeout(resetBoard, 2000);
         });
 
+        socket.on('waiting for player', function (msg) {
+            document.getElementById("score").innerHTML = msg;
+            document.getElementById("scoreBlue").innerHTML = 0;
+            document.getElementById("scoreRed").innerHTML = 0;
+        });
+
+        socket.on('your turn', function (msg) {
+            if (msg) {
+                document.getElementById("score").innerHTML = "Your turn";
+            }
+            else {
+                document.getElementById("score").innerHTML = "Other players turn";
+            }
+        })
+
         function resetBoard() {
             for (let i = 0; i < 9; i++) {
                 var square = document.getElementById(i);
@@ -133,5 +148,7 @@
                 player0 = [0, 0, 0];
                 player1 = [0, 0, 0];
             }
+            socket.emit('board resat');
         }
+
       </script>
